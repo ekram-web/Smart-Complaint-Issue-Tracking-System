@@ -1,0 +1,114 @@
+// Database schema for ASTU Smart Complaint System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User roles in the system
+enum Role {
+  STUDENT  // Can submit complaints
+  STAFF    // Can manage assigned complaints
+  ADMIN    // Full system access
+}
+
+// Ticket lifecycle status
+enum TicketStatus {
+  OPEN         // Just submitted
+  IN_PROGRESS  // Being worked on
+  RESOLVED     // Fixed/completed
+}
+
+// Priority levels
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// User model - Students, Staff, and Admins
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  password       String    // Hashed with bcrypt
+  role           Role      @default(STUDENT)
+  identification String?   // Student ID or Staff ID
+  department     String?   // For staff members
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  authoredTickets  Ticket[]  @relation("TicketAuthor")
+  assignedTickets  Ticket[]  @relation("TicketAssignee")
+  remarks          Remark[]
+}
+
+// Complaint categories (Dormitory, Lab, Internet, etc.)
+model Category {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  description  String?
+  department   String    // Which department handles this
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tickets      Ticket[]
+}
+
+// Main complaint/ticket model
+model Ticket {
+  id          String        @id @default(cuid())
+  ticketId    String        @unique // Human-readable: ASTU-2024-001
+  title       String
+  description String
+  location    String?       // Where the issue is
+  status      TicketStatus  @default(OPEN)
+  priority    Priority      @default(MEDIUM)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  resolvedAt  DateTime?     // When it was resolved
+
+  // Who submitted it
+  authorId    String
+  author      User          @relation("TicketAuthor", fields: [authorId], references: [id])
+  
+  // Who's working on it
+  assignedToId String?
+  assignedTo  User?         @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  
+  // What category
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id])
+
+  // Related data
+  attachments Attachment[]
+  remarks     Remark[]
+}
+
+// File attachments (images, PDFs, etc.)
+model Attachment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  filename  String
+  filepath  String
+  mimetype  String   // image/png, application/pdf, etc.
+  size      Int      // File size in bytes
+  createdAt DateTime @default(now())
+}
+
+// Comments/updates on tickets
+model Remark {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  isInternal Boolean @default(false) // Staff-only notes
+  createdAt DateTime @default(now())
+}
