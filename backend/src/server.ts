@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import categoryRoutes from './routes/category.routes';
+import ticketRoutes from './routes/ticket.routes';
 import { errorHandler } from './middlewares/errorHandler';
 
 // Load environment variables
@@ -29,6 +30,7 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);
