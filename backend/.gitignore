@@ -4,3 +4,7 @@ dist
 uploads
 *.log
 .DS_Store
+
+# Documentation (personal learning notes)
+LEARNING_GUIDE.md
+API.md
