@@ -1,8 +1,8 @@
 // Authentication Context
 // Provides global user state and auth functions to entire app
 
-import { createContext, useContext, useState, useEffect} from 'react'
-import type { ReactNode} from '../types/'
+import { createContext, useContext, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import type { User } from '../types'
 import { authAPI } from '../api/auth'
 
