@@ -5,25 +5,19 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { authAPI } from '../../api/auth'
+import { useAuth } from '../../context/AuthContext'
 import type { LoginInput } from '../../types'
 
 export function Login() {
-  // ============================================
-  // STATE MANAGEMENT
-  // ============================================
-  
-  // Form inputs - controlled components
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  
-  // UI states
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   
-  // Navigation hook - for redirecting after login
   const navigate = useNavigate()
+  const { login } = useAuth()
   
   // ============================================
   // FORM SUBMISSION HANDLER
@@ -60,11 +54,8 @@ export function Login() {
       
       // Check if login was successful
       if (response.success) {
-        // Store token in localStorage
-        localStorage.setItem('token', response.data.token)
-        
-        // Store user data (optional, for quick access)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
+        // Use AuthContext login function
+        login(response.data.user, response.data.token)
         
         // If "Remember Me" is checked, set longer expiry
         if (rememberMe) {
