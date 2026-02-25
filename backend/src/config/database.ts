@@ -3,9 +3,13 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
-// Create PostgreSQl connection pool
+// Create PostgreSQL connection pool with explicit config (workaround for numeric password issue)
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
+  host: 'localhost',
+  port: 5432,
+  database: 'astu_complaints',
+  user: 'postgres',
+  password: String(process.env.DB_PASSWORD || '1203'), // Ensure password is string
 });
 
 // Create Prisma adapter
