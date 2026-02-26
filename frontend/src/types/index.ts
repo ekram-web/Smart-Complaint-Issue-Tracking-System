@@ -16,6 +16,11 @@ export interface User {
   department?: string     // Optional, mainly for staff
   createdAt: string
   updatedAt: string
+  
+  // Relations count (populated by backend)
+  _count?: {
+    tickets?: number
+  }
 }
 
 // ============================================
@@ -98,6 +103,21 @@ export interface Remark {
   
   // Relations
   author?: User
+}
+
+// ============================================
+// NOTIFICATION TYPES
+// ============================================
+
+export interface Notification {
+  id: string
+  userId: string
+  title: string
+  message: string
+  type: string
+  link?: string
+  isRead: boolean
+  createdAt: string
 }
 
 // ============================================
