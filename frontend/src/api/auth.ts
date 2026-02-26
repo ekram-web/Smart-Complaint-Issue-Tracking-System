@@ -69,6 +69,25 @@ export const authAPI = {
   },
 
   /**
+   * Update user profile
+   * PUT /api/auth/profile
+   * Requires authentication token
+   * 
+   * @param data - Profile data to update (name, identification, department)
+   * @returns Updated user data
+   * 
+   * Example:
+   * const response = await authAPI.updateProfile({
+   *   name: 'John Updated',
+   *   identification: 'ASTU/2024/002'
+   * })
+   */
+  updateProfile: async (data: { name?: string; identification?: string; department?: string }): Promise<ApiResponse<User>> => {
+    const response = await axiosInstance.put<ApiResponse<User>>('/auth/profile', data)
+    return response.data
+  },
+
+  /**
    * Logout user (client-side only)
    * Clears token and user data from localStorage
    */

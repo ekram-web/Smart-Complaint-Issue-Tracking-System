@@ -2,6 +2,7 @@
 // This file sets up axios with base URL and interceptors
 
 import axios from 'axios'
+import toast from 'react-hot-toast'
 
 // Base URL for all API requests
 // In production, this would be your deployed backend URL
@@ -32,14 +33,9 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
     
-    // Log request for debugging (remove in production)
-    console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`)
-    
     return config
   },
   (error) => {
-    // Handle request error
-    console.error('❌ Request Error:', error)
     return Promise.reject(error)
   }
 )
@@ -52,37 +48,32 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Log successful response (remove in production)
-    console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data)
-    
+    // Success - no logging needed, let components handle it
     return response
   },
   (error) => {
-    // Handle response errors
-    console.error('❌ Response Error:', error.response?.data || error.message)
-    
+    // Only handle critical errors automatically
     // If 401 Unauthorized, token is invalid
     if (error.response?.status === 401) {
+      toast.error('Session expired. Please login again.')
+      
       // Clear token and redirect to login
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       
       // Only redirect if not already on login page
       if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login'
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 1000)
       }
     }
-    
-    // If 403 Forbidden, user doesn't have permission
-    if (error.response?.status === 403) {
-      console.error('🚫 Access Denied: You do not have permission')
+    // Network error
+    else if (error.code === 'ERR_NETWORK') {
+      toast.error('Cannot connect to server. Please check your connection.')
     }
     
-    // If 500 Server Error
-    if (error.response?.status === 500) {
-      console.error('🔥 Server Error: Something went wrong on the backend')
-    }
-    
+    // Let components handle other errors
     return Promise.reject(error)
   }
 )

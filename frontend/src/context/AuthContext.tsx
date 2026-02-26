@@ -8,6 +8,7 @@ import { authAPI } from '../api/auth'
 
 interface AuthContextType {
   user: User | null
+  setUser: (user: User) => void
   loading: boolean
   login: (user: User, token: string) => void
   logout: () => void
@@ -64,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = {
     user,
+    setUser,
     loading,
     login,
     logout,
