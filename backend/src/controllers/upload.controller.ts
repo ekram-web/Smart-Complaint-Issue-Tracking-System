@@ -1,5 +1,6 @@
 // File Upload Controller - Handle file attachments
 import { Request, Response } from 'express';
+import path from 'path';
 import prisma from '../config/database';
 import { successResponse, errorResponse } from '../utils/response';
 
@@ -40,11 +41,14 @@ export const uploadAttachment = async (req: Request, res: Response) => {
     }
 
     // Step 6: Save attachment info to database
+    // Store relative path for URL access
+    const relativePath = `/uploads/${file.filename}`;
+    
     const attachment = await prisma.attachment.create({
       data: {
         ticketId,
         filename: file.originalname,      // Original filename
-        filepath: Array.isArray(file.path) ? file.path[0] : file.path, // Ensure string
+        filepath: relativePath,           // Relative path for URL
         mimetype: file.mimetype,          // File type
         size: file.size,                  // File size in bytes
       },
@@ -97,7 +101,9 @@ export const getAttachment = async (req: Request, res: Response) => {
     }
 
     // Step 5: Send file to user
-    res.sendFile(attachment.filepath);
+    // Convert relative path to absolute path
+    const absolutePath = path.join(process.cwd(), attachment.filepath.replace('/uploads/', 'uploads/'));
+    res.sendFile(absolutePath);
   } catch (error: any) {
     return errorResponse(res, error.message || 'Failed to get attachment', 500);
   }

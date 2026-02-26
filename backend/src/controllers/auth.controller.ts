@@ -162,3 +162,46 @@ export const getProfile = async (req: Request, res: Response) => {
     return errorResponse(res, error.message || 'Failed to get profile', 500);
   }
 };
+
+// ============================================
+// FEATURE 4: UPDATE USER PROFILE
+// ============================================
+
+const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+  identification: z.string().optional(),
+  department: z.string().optional(),
+});
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    // Step 1: Get user ID from token
+    const userId = req.user?.userId;
+
+    // Step 2: Validate incoming data
+    const validatedData = updateProfileSchema.parse(req.body);
+
+    // Step 3: Update user in database
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: validatedData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        identification: true,
+        department: true,
+        createdAt: true,
+      },
+    });
+
+    // Step 4: Send success response
+    return successResponse(res, user, 'Profile updated successfully');
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return errorResponse(res, 'Validation failed', 400, error.errors);
+    }
+    return errorResponse(res, error.message || 'Failed to update profile', 500);
+  }
+};

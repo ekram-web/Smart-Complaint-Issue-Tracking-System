@@ -67,7 +67,7 @@ export const getCategories = async (req: Request, res: Response) => {
 export const getCategory = async (req: Request, res: Response) => {
   try {
     // Step 1: Get category ID from URL parameter
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     // Step 2: Find category in database
     const category = await prisma.category.findUnique({
@@ -99,7 +99,7 @@ export const getCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     // Step 1: Get category ID from URL
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     // Step 2: Validate incoming data (partial = all fields optional)
     const validatedData = categorySchema.partial().parse(req.body);
@@ -128,14 +128,28 @@ export const updateCategory = async (req: Request, res: Response) => {
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
     // Step 1: Get category ID from URL
-    const { id } = req.params;
+    const id = req.params.id as string;
 
-    // Step 2: Delete category from database
+    // Step 2: Check if category has any tickets
+    const ticketCount = await prisma.ticket.count({
+      where: { categoryId: id },
+    });
+
+    // Step 3: If category has tickets, prevent deletion
+    if (ticketCount > 0) {
+      return errorResponse(
+        res,
+        `Cannot delete category. It has ${ticketCount} ticket(s) associated with it. Please reassign or delete those tickets first.`,
+        400
+      );
+    }
+
+    // Step 4: Delete category from database
     await prisma.category.delete({
       where: { id },
     });
 
-    // Step 3: Send success response
+    // Step 5: Send success response
     return successResponse(res, null, 'Category deleted successfully');
   } catch (error: any) {
     return errorResponse(res, error.message || 'Failed to delete category', 500);
