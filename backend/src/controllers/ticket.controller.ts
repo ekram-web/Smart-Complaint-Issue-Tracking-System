@@ -4,6 +4,7 @@ import { z } from 'zod';
 import prisma from '../config/database';
 import { successResponse, errorResponse } from '../utils/response';
 import { generateTicketId } from '../utils/ticketId';
+import { createNotification } from './notification.controller';
 
 // ============================================
 // VALIDATION SCHEMAS
@@ -55,6 +56,22 @@ export const createTicket = async (req: Request, res: Response) => {
     });
 
     // Step 4: Send success response
+    // Notify admins about new ticket
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: { id: true },
+    });
+
+    for (const admin of admins) {
+      await createNotification(
+        admin.id,
+        'New Ticket Created',
+        `${ticket.author.name} created ticket: ${ticket.title}`,
+        'TICKET_CREATED',
+        `/tickets/${ticket.id}`
+      );
+    }
+
     return successResponse(res, ticket, 'Ticket created successfully', 201);
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -92,9 +109,9 @@ export const getTickets = async (req: Request, res: Response) => {
     // ADMIN can see all tickets (no filter)
 
     // Step 3: Apply additional filters from query
-    if (status) where.status = status;
-    if (priority) where.priority = priority;
-    if (categoryId) where.categoryId = categoryId;
+    if (status && typeof status === 'string') where.status = status;
+    if (priority && typeof priority === 'string') where.priority = priority;
+    if (categoryId && typeof categoryId === 'string') where.categoryId = categoryId;
 
     // Step 4: Fetch tickets from database
     const tickets = await prisma.ticket.findMany({
@@ -129,7 +146,7 @@ export const getTickets = async (req: Request, res: Response) => {
 export const getTicket = async (req: Request, res: Response) => {
   try {
     // Step 1: Get ticket ID from URL
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userRole = req.user!.role;
     const userId = req.user!.userId;
 
@@ -185,7 +202,7 @@ export const getTicket = async (req: Request, res: Response) => {
 export const updateTicket = async (req: Request, res: Response) => {
   try {
     // Step 1: Get ticket ID from URL
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     // Step 2: Validate incoming data
     const validatedData = updateTicketSchema.parse(req.body);
@@ -212,6 +229,29 @@ export const updateTicket = async (req: Request, res: Response) => {
     });
 
     // Step 5: Send success response
+    // Send notifications based on what changed
+    if (validatedData.assignedToId && validatedData.assignedToId !== ticket.assignedToId) {
+      // Notify assigned staff
+      await createNotification(
+        validatedData.assignedToId,
+        'Ticket Assigned to You',
+        `You have been assigned ticket: ${ticket.title}`,
+        'TICKET_ASSIGNED',
+        `/tickets/${ticket.id}`
+      );
+    }
+
+    if (validatedData.status && validatedData.status !== ticket.status) {
+      // Notify ticket author about status change
+      await createNotification(
+        ticket.authorId,
+        'Ticket Status Updated',
+        `Your ticket "${ticket.title}" status changed to ${validatedData.status}`,
+        'STATUS_UPDATED',
+        `/tickets/${ticket.id}`
+      );
+    }
+
     return successResponse(res, ticket, 'Ticket updated successfully');
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -229,7 +269,7 @@ export const updateTicket = async (req: Request, res: Response) => {
 export const addRemark = async (req: Request, res: Response) => {
   try {
     // Step 1: Get ticket ID from URL
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { content, isInternal } = req.body;
 
     // Step 2: Validate content
@@ -253,6 +293,36 @@ export const addRemark = async (req: Request, res: Response) => {
     });
 
     // Step 4: Send success response
+    // Notify relevant users about new comment
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      select: { authorId: true, assignedToId: true, title: true },
+    });
+
+    if (ticket) {
+      // Notify ticket author if commenter is not the author
+      if (ticket.authorId !== req.user!.userId) {
+        await createNotification(
+          ticket.authorId,
+          'New Comment on Your Ticket',
+          `${remark.author?.name} commented on: ${ticket.title}`,
+          'COMMENT_ADDED',
+          `/tickets/${id}`
+        );
+      }
+
+      // Notify assigned staff if commenter is not the assigned staff
+      if (ticket.assignedToId && ticket.assignedToId !== req.user!.userId) {
+        await createNotification(
+          ticket.assignedToId,
+          'New Comment on Assigned Ticket',
+          `${remark.author?.name} commented on: ${ticket.title}`,
+          'COMMENT_ADDED',
+          `/tickets/${id}`
+        );
+      }
+    }
+
     return successResponse(res, remark, 'Remark added successfully', 201);
   } catch (error: any) {
     return errorResponse(res, error.message || 'Failed to add remark', 500);
