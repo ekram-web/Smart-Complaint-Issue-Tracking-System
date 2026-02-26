@@ -14,11 +14,20 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const totalUsers = await prisma.user.count();
     const totalCategories = await prisma.category.count();
 
-    // Step 2: Group tickets by status (how many OPEN, IN_PROGRESS, RESOLVED)
+    // Count unassigned tickets
+    const unassignedTickets = await prisma.ticket.count({
+      where: { assignedToId: null },
+    });
+
+    // Step 2: Group tickets by status
     const ticketsByStatus = await prisma.ticket.groupBy({
       by: ['status'],
       _count: true,
     });
+
+    // Calculate resolution rate
+    const resolvedCount = ticketsByStatus.find((s) => s.status === 'RESOLVED')?._count || 0;
+    const resolutionRate = totalTickets > 0 ? Math.round((resolvedCount / totalTickets) * 100) : 0;
 
     // Step 3: Group tickets by priority
     const ticketsByPriority = await prisma.ticket.groupBy({
@@ -77,12 +86,50 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       avgResolutionTime = Math.round(totalTime / resolvedTickets.length / (1000 * 60 * 60)); // in hours
     }
 
+    // Staff workload - tickets assigned to each staff member
+    const staffWorkload = await prisma.user.findMany({
+      where: {
+        role: { in: ['STAFF', 'ADMIN'] },
+      },
+      select: {
+        id: true,
+        name: true,
+        department: true,
+        _count: {
+          select: {
+            assignedTickets: true,
+          },
+        },
+      },
+      orderBy: {
+        assignedTickets: {
+          _count: 'desc',
+        },
+      },
+      take: 5,
+    });
+
+    // Tickets created in last 7 days (for trend)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const recentTicketsCount = await prisma.ticket.count({
+      where: {
+        createdAt: {
+          gte: sevenDaysAgo,
+        },
+      },
+    });
+
     const stats = {
       overview: {
         totalTickets,
         totalUsers,
         totalCategories,
         avgResolutionTimeHours: avgResolutionTime,
+        unassignedTickets,
+        resolutionRate,
+        recentTicketsCount, // Last 7 days
       },
       ticketsByStatus: ticketsByStatus.map((item) => ({
         status: item.status,
@@ -93,6 +140,11 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         count: item._count,
       })),
       ticketsByCategory: categoryStats,
+      staffWorkload: staffWorkload.map((staff) => ({
+        name: staff.name,
+        department: staff.department || 'N/A',
+        assignedTickets: staff._count.assignedTickets,
+      })),
       recentTickets,
     };
 
