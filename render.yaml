@@ -2,9 +2,8 @@ services:
   # Backend API
   - type: web
     name: astu-complaint-backend
-    env: node
+    runtime: node
     region: oregon
-    plan: free
     buildCommand: cd backend && npm install && npx prisma generate && npm run build
     startCommand: cd backend && npx prisma migrate deploy && npm start
     envVars:
@@ -23,8 +22,7 @@ services:
   # Frontend
   - type: web
     name: astu-complaint-frontend
-    env: static
-    plan: free
+    runtime: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
@@ -38,6 +36,5 @@ services:
 
 databases:
   - name: astu-complaint-db
-    plan: free
     databaseName: astu_complaint
     user: astu_user
