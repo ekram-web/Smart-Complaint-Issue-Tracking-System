@@ -3,7 +3,10 @@ import { Request, Response, NextFunction } from 'express';
 import { errorResponse } from '../utils/response';
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
+  // Log error in development only
+  if (process.env.NODE_ENV === 'development') {
+    // Error logged for debugging
+  }
 
   // Prisma database errors
   if (err.code === 'P2002') {

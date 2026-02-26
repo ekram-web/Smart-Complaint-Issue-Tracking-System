@@ -23,7 +23,7 @@ const prisma = new PrismaClient({
 
 export const seedDatabase = async () => {
   try {
-    console.log('🌱 Seeding database...');
+    // Seeding database...
 
     // Create admin user
     const adminPassword = await hashPassword('admin123');
@@ -83,16 +83,12 @@ export const seedDatabase = async () => {
       });
     }
 
-    console.log('✅ Database seeded successfully!');
-    console.log('\n📧 Test Accounts:');
-    console.log('Admin: admin@astu.edu.et / admin123');
-    console.log('Staff: staff@astu.edu.et / staff123');
-    console.log('Student: student@astu.edu.et / student123');
+    // Database seeded successfully
     
     await prisma.$disconnect();
     await pool.end();
   } catch (error) {
-    console.error('❌ Seeding failed:', error);
+    // Seeding failed
     await prisma.$disconnect();
     await pool.end();
     throw error;
