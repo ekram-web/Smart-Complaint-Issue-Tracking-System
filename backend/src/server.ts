@@ -21,7 +21,8 @@ app.use(cors({
   origin: [
     'http://localhost:5174',
     'http://localhost:5173',
-    'https://astu-complaint.vercel.app'
+    'https://astu-complaint.vercel.app',
+    'https://jacinta-nonflagitious-squirtingly.ngrok-free.dev'
   ],
   credentials: true
 }));
