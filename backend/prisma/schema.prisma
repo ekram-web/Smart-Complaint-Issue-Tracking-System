@@ -45,6 +45,7 @@ model User {
   authoredTickets  Ticket[]  @relation("TicketAuthor")
   assignedTickets  Ticket[]  @relation("TicketAssignee")
   remarks          Remark[]
+  notifications    Notification[]
 }
 
 // Complaint categories (Dormitory, Lab, Internet, etc.)
@@ -110,5 +111,18 @@ model Remark {
   author    User     @relation(fields: [authorId], references: [id])
   content   String
   isInternal Boolean @default(false) // Staff-only notes
+  createdAt DateTime @default(now())
+}
+
+// Notifications for users
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // TICKET_CREATED, TICKET_ASSIGNED, STATUS_UPDATED, COMMENT_ADDED
+  link      String?  // Link to related resource
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
