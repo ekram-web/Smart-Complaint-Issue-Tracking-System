@@ -2,14 +2,52 @@
 // Sets up routing and authentication
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Login } from './pages/auth/Login'
 import { Register } from './pages/auth/Register'
+import { StudentDashboard } from './pages/student/Dashboard'
+import { CreateTicket } from './pages/student/CreateTicket'
+import { TicketsList } from './pages/student/TicketsList'
+import { TicketDetail } from './pages/student/TicketDetail'
+import { StaffDashboard } from './pages/staff/Dashboard'
+import { AdminDashboard } from './pages/admin/Dashboard'
+import { Users } from './pages/admin/Users'
+import { Categories } from './pages/admin/Categories'
+import { AllTickets } from './pages/admin/AllTickets'
+import { Profile } from './pages/Profile'
+import { AssignedTickets } from './pages/staff/AssignedTickets'
 
 function App() {
   return (
-    <AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <BrowserRouter>
         <Routes>
           {/* Redirect root to login */}
@@ -24,10 +62,41 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute allowedRoles={['STUDENT']}>
-                <div className="p-8 text-center">
-                  <h1 className="text-3xl font-bold">Student Dashboard</h1>
-                  <p className="mt-4">Coming soon!</p>
-                </div>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets"
+            element={
+              <ProtectedRoute allowedRoles={['STUDENT']}>
+                <TicketsList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets/create"
+            element={
+              <ProtectedRoute allowedRoles={['STUDENT']}>
+                <CreateTicket />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets/:id"
+            element={
+              <ProtectedRoute allowedRoles={['STUDENT', 'STAFF', 'ADMIN']}>
+                <TicketDetail />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Profile - All authenticated users */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute allowedRoles={['STUDENT', 'STAFF', 'ADMIN']}>
+                <Profile />
               </ProtectedRoute>
             }
           />
@@ -37,10 +106,15 @@ function App() {
             path="/staff/dashboard"
             element={
               <ProtectedRoute allowedRoles={['STAFF']}>
-                <div className="p-8 text-center">
-                  <h1 className="text-3xl font-bold">Staff Dashboard</h1>
-                  <p className="mt-4">Coming soon!</p>
-                </div>
+                <StaffDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/staff/tickets"
+            element={
+              <ProtectedRoute allowedRoles={['STAFF']}>
+                <AssignedTickets />
               </ProtectedRoute>
             }
           />
@@ -50,10 +124,31 @@ function App() {
             path="/admin/dashboard"
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
-                <div className="p-8 text-center">
-                  <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                  <p className="mt-4">Coming soon!</p>
-                </div>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <Users />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/categories"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <Categories />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/tickets"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AllTickets />
               </ProtectedRoute>
             }
           />
@@ -75,7 +170,8 @@ function App() {
           />
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 
