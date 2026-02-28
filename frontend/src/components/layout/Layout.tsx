@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Sidebar } from './Sidebar'
 import { Navbar } from './Navbar'
+import Chatbot from '../Chatbot'
 
 interface LayoutProps {
   children: ReactNode
@@ -25,6 +26,9 @@ export function Layout({ children }: LayoutProps) {
           <div className="container mx-auto px-4 lg:px-6 py-6 lg:py-8 min-h-full">{children}</div>
         </main>
       </div>
+
+      {/* AI Chatbot */}
+      <Chatbot />
     </div>
   )
 }
