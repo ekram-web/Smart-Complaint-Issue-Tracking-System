@@ -8,6 +8,7 @@ services:
     rootDirectory: backend
     buildCommand: npm install && npx prisma generate && npm run build
     startCommand: npm start
+    preDeployCommand: npx prisma db push --accept-data-loss && npm run db:seed
     envVars:
       - key: NODE_ENV
         value: production
