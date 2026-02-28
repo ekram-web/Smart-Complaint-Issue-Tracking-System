@@ -1,8 +1,9 @@
 // Seed initial data for testing
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Priority, TicketStatus } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import { hashPassword } from './password';
+import { generateTicketId } from './ticketId';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -75,15 +76,119 @@ export const seedDatabase = async () => {
       { name: 'Library', description: 'Library services and resources', department: 'Library Services' },
     ];
 
+    const createdCategories = [];
     for (const cat of categories) {
-      await prisma.category.upsert({
+      const category = await prisma.category.upsert({
         where: { name: cat.name },
         update: {},
         create: cat,
       });
+      createdCategories.push(category);
     }
 
-    // Database seeded successfully
+    // Create sample tickets
+    const sampleTickets = [
+      {
+        title: 'Broken AC in Room 204',
+        description: 'The air conditioning unit in dormitory room 204 is not working. It has been making strange noises for the past week.',
+        categoryId: createdCategories[0].id,
+        authorId: student.id,
+        priority: Priority.HIGH,
+        status: TicketStatus.OPEN,
+      },
+      {
+        title: 'Microscope not functioning',
+        description: 'The microscope in Lab B is not turning on. Need urgent repair for upcoming practical exam.',
+        categoryId: createdCategories[1].id,
+        authorId: student.id,
+        priority: Priority.HIGH,
+        status: TicketStatus.IN_PROGRESS,
+      },
+      {
+        title: 'Slow WiFi in Library',
+        description: 'Internet connection in the library is extremely slow. Cannot download research papers.',
+        categoryId: createdCategories[2].id,
+        authorId: student.id,
+        priority: Priority.MEDIUM,
+        status: TicketStatus.OPEN,
+      },
+      {
+        title: 'Projector not working in Room 301',
+        description: 'The projector in classroom 301 is not displaying properly. Screen is flickering.',
+        categoryId: createdCategories[3].id,
+        authorId: student.id,
+        priority: Priority.HIGH,
+        status: TicketStatus.RESOLVED,
+      },
+      {
+        title: 'Missing books in library',
+        description: 'Several reference books for Computer Science are missing from the library shelves.',
+        categoryId: createdCategories[4].id,
+        authorId: student.id,
+        priority: Priority.LOW,
+        status: TicketStatus.OPEN,
+      },
+      {
+        title: 'Water leakage in dormitory bathroom',
+        description: 'There is water leaking from the ceiling in the bathroom of Block C, Room 105.',
+        categoryId: createdCategories[0].id,
+        authorId: student.id,
+        priority: Priority.HIGH,
+        status: TicketStatus.IN_PROGRESS,
+      },
+      {
+        title: 'Lab equipment shortage',
+        description: 'Not enough lab coats and safety goggles for all students in Chemistry Lab.',
+        categoryId: createdCategories[1].id,
+        authorId: student.id,
+        priority: Priority.MEDIUM,
+        status: TicketStatus.OPEN,
+      },
+      {
+        title: 'Network port not working',
+        description: 'Ethernet port in Computer Lab 2 is not providing internet connection.',
+        categoryId: createdCategories[2].id,
+        authorId: student.id,
+        priority: Priority.MEDIUM,
+        status: TicketStatus.RESOLVED,
+      },
+      {
+        title: 'Broken chairs in lecture hall',
+        description: 'Multiple chairs in Lecture Hall A are broken and need replacement.',
+        categoryId: createdCategories[3].id,
+        authorId: student.id,
+        priority: Priority.LOW,
+        status: TicketStatus.OPEN,
+      },
+      {
+        title: 'Library AC too cold',
+        description: 'The air conditioning in the library reading room is set too cold. Many students are uncomfortable.',
+        categoryId: createdCategories[4].id,
+        authorId: student.id,
+        priority: Priority.LOW,
+        status: TicketStatus.RESOLVED,
+      },
+    ];
+
+    for (const ticket of sampleTickets) {
+      const ticketId = await generateTicketId();
+      await prisma.ticket.create({
+        data: {
+          ...ticket,
+          ticketId,
+        },
+      });
+    }
+
+    console.log('✅ Database seeded successfully!');
+    console.log('📊 Created:');
+    console.log('   - 3 users (admin, staff, student)');
+    console.log('   - 5 categories');
+    console.log('   - 10 sample tickets');
+    console.log('\n🔑 Login credentials:');
+    console.log('   Admin: admin@astu.edu.et / admin123');
+    console.log('   Staff: staff@astu.edu.et / staff123');
+    console.log('   Student: student@astu.edu.et / student123');
     
     await prisma.$disconnect();
     await pool.end();
