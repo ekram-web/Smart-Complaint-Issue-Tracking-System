@@ -8,6 +8,10 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // Prisma CLI will run this command when `prisma db seed` is executed
+    // using `npx prisma db seed`. It simply delegates to the same script
+    // we expose via npm (`npm run db:seed`).
+    seed: "tsx src/utils/seed.ts",
   },
   datasource: {
     url: process.env["DATABASE_URL"],
