@@ -105,7 +105,7 @@ export function CreateTicket() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto pb-0">
         <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6">
           <a href="/dashboard" className="hover:text-primary flex items-center gap-1">
             <span className="material-symbols-outlined text-base">dashboard</span>
@@ -115,7 +115,7 @@ export function CreateTicket() {
           <span className="text-slate-900 dark:text-white font-semibold">Create Ticket</span>
         </nav>
 
-        <Card>
+        <Card className="mb-0">
           <div className="p-8 border-b border-slate-100 dark:border-slate-800">
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">
               Report a New Issue
@@ -125,7 +125,7 @@ export function CreateTicket() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <form onSubmit={handleSubmit} className="p-8 space-y-6 pb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -275,7 +275,7 @@ export function CreateTicket() {
               )}
             </div>
 
-            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex gap-4">
+            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex gap-4 pb-0">
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}

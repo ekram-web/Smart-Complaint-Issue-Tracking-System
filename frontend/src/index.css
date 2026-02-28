@@ -9,9 +9,11 @@
 
 /* Custom styles */
 @layer base {
-  body {
+  html, body {
     margin: 0;
     padding: 0;
+    height: 100%;
+    overflow: hidden;
     font-family: 'Inter', sans-serif;
   }
   
