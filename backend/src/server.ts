@@ -22,6 +22,7 @@ app.use(cors({
     'http://localhost:5174',
     'http://localhost:5173',
     'https://astu-complaint.vercel.app',
+    'https://smart-complaint-issue-tracking-system.onrender.com',
     'https://jacinta-nonflagitious-squirtingly.ngrok-free.dev'
   ],
   credentials: true

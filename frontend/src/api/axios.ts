@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 // Base URL for all API requests
 // In production, this would be your deployed backend URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://astu-complaint-api.onrender.com/api'
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
