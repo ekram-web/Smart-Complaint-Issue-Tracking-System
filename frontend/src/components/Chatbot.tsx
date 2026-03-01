@@ -7,8 +7,8 @@ interface Message {
   content: string;
 }
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCQgdhSoE73X37WUgHrXBUOKuDZ5vsSMIs';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 const systemInstruction = `You are an AI assistant for the ASTU (Adama Science and Technology University) Smart Complaint System.
 
@@ -48,7 +48,7 @@ export default function Chatbot() {
       setMessages([{
         id: Date.now(),
         role: 'assistant',
-        content: 'Hello! 👋 I\'m your ASTU Complaint Assistant powered by Gemini AI. I can help you with:\n\n• Understanding how to submit complaints\n• Checking complaint status\n• Finding the right category\n• General questions about the system\n\nHow can I help you today?'
+        content: 'Hi! 👋 I\'m your ASTU Complaint Assistant powered by Gemini AI. I can help you with:\n\n• Understanding how to submit complaints\n• Checking complaint status\n• Finding the right category\n• General questions about the system\n\nHow can I help you today?'
       }]);
     }
   }, [isOpen, messages.length]);
@@ -132,12 +132,24 @@ export default function Chatbot() {
       parts: [{ text: msg.content }]
     }));
 
+    // Add system instruction as first message if this is the first user message
+    const systemMessages = historyForApi.length === 0 ? [
+      {
+        role: 'user',
+        parts: [{ text: systemInstruction }]
+      },
+      {
+        role: 'model',
+        parts: [{ text: 'Understood! I will help users with the ASTU Smart Complaint System following those guidelines.' }]
+      }
+    ] : [];
+
     const currentUserMessage = {
       role: 'user',
       parts: [{ text: userMessage.content }]
     };
 
-    const requestContents = [...historyForApi, currentUserMessage];
+    const requestContents = [...systemMessages, ...historyForApi, currentUserMessage];
 
     try {
       const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -145,9 +157,6 @@ export default function Chatbot() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: requestContents,
-          systemInstruction: {
-            parts: [{ text: systemInstruction }]
-          },
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 500,
