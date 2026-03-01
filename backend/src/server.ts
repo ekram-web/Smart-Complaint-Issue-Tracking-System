@@ -8,7 +8,6 @@ import ticketRoutes from './routes/ticket.routes';
 import uploadRoutes from './routes/upload.routes';
 import adminRoutes from './routes/admin.routes';
 import notificationRoutes from './routes/notification.routes';
-import chatbotRoutes from './routes/chatbot.routes';
 import { errorHandler } from './middlewares/errorHandler';
 
 // Load environment variables
@@ -50,7 +49,6 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/chatbot', chatbotRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

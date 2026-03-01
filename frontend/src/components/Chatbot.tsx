@@ -1,21 +1,40 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, MessageCircle, Send } from 'lucide-react';
+import { X, MessageCircle, Send, Maximize2, Minimize2 } from 'lucide-react';
 
 interface Message {
+  id: number;
   role: 'user' | 'assistant';
   content: string;
 }
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCQgdhSoE73X37WUgHrXBUOKuDZ5vsSMIs';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+
+const systemInstruction = `You are an AI assistant for the ASTU (Adama Science and Technology University) Smart Complaint System.
+
+Your role is to help students, staff, and administrators understand and use the complaint management system effectively.
+
+System Information:
+- Categories: Dormitory, Laboratory, Internet, Classroom, Library
+- User Roles: Student (submit complaints), Staff (manage complaints), Admin (full access)
+- Ticket Status: OPEN, IN_PROGRESS, RESOLVED
+- Priority Levels: LOW, MEDIUM, HIGH
+- Features: Create tickets, track status, file attachments, notifications, remarks
+
+Guidelines:
+- Be helpful, friendly, and professional
+- Keep responses concise (2-3 paragraphs max)
+- Use bullet points for lists
+- Focus on ASTU complaint system features
+- If asked about unrelated topics, politely redirect to complaint system topics`;
+
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Hello! I\'m your ASTU Complaint Assistant. I can help you with:\n\n• Understanding how to submit complaints\n• Checking complaint status\n• Finding the right category\n• General questions about the system\n\nHow can I help you today?'
-    }
-  ]);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Resize state
   const [size, setSize] = useState({ width: 500, height: 650 });
@@ -23,42 +42,23 @@ export default function Chatbot() {
   const chatRef = useRef<HTMLDivElement>(null);
   const resizingRef = useRef<string | null>(null);
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://smart-complaint-issue-tracking-system.onrender.com/api'}/chatbot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.data.response }]);
-      } else {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: 'Sorry, I encountered an error. Please try again or contact support.' 
-        }]);
-      }
-    } catch (error) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I\'m having trouble connecting. Please try again later.' 
+  // Initialize with welcome message
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      setMessages([{
+        id: Date.now(),
+        role: 'assistant',
+        content: 'Hello! 👋 I\'m your ASTU Complaint Assistant powered by Gemini AI. I can help you with:\n\n• Understanding how to submit complaints\n• Checking complaint status\n• Finding the right category\n• General questions about the system\n\nHow can I help you today?'
       }]);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [isOpen, messages.length]);
 
-  // Resize handlers - Only corners
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Resize handlers
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizingRef.current || !chatRef.current) return;
@@ -70,7 +70,6 @@ export default function Chatbot() {
         let newWidth = prev.width;
         let newHeight = prev.height;
 
-        // Handle corner resizing (both width and height)
         if (direction === 'top-left') {
           newWidth = Math.max(350, Math.min(800, rect.right - e.clientX));
           newHeight = Math.max(400, Math.min(900, rect.bottom - e.clientY));
@@ -107,11 +106,84 @@ export default function Chatbot() {
   const startResize = (direction: string) => {
     resizingRef.current = direction;
     document.body.style.userSelect = 'none';
-    // Set cursor based on corner direction
     if (direction === 'top-left' || direction === 'bottom-right') {
       document.body.style.cursor = 'nwse-resize';
     } else if (direction === 'top-right' || direction === 'bottom-left') {
       document.body.style.cursor = 'nesw-resize';
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+
+    const userMessage: Message = { 
+      id: Date.now(), 
+      role: 'user', 
+      content: input 
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    // Prepare conversation history (last 10 messages)
+    const historyForApi = messages.slice(-10).map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    }));
+
+    const currentUserMessage = {
+      role: 'user',
+      parts: [{ text: userMessage.content }]
+    };
+
+    const requestContents = [...historyForApi, currentUserMessage];
+
+    try {
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: requestContents,
+          systemInstruction: {
+            parts: [{ text: systemInstruction }]
+          },
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500,
+          }
+        })
+      });
+
+      const data = await response.json();
+      
+      let botText = 'Sorry, I couldn\'t get a response. Please try again.';
+      if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+        botText = data.candidates[0].content.parts[0].text;
+      }
+
+      setMessages(prev => [...prev, { 
+        id: Date.now() + 1, 
+        role: 'assistant', 
+        content: botText 
+      }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { 
+        id: Date.now() + 1, 
+        role: 'assistant', 
+        content: 'Error: Could not reach Gemini API. Please try again later.' 
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleMaximize = () => {
+    setIsMaximized(!isMaximized);
+    if (!isMaximized) {
+      setSize({ width: Math.min(window.innerWidth * 0.7, 800), height: window.innerHeight * 0.8 });
+    } else {
+      setSize({ width: 500, height: 650 });
     }
   };
 
@@ -128,7 +200,7 @@ export default function Chatbot() {
         </button>
       )}
 
-      {/* Chat Window - Resizable on all corners and edges */}
+      {/* Chat Window */}
       {isOpen && (
         <div 
           ref={chatRef}
@@ -141,33 +213,17 @@ export default function Chatbot() {
             maxHeight: 'calc(100vh - 120px)'
           }}
         >
-          {/* Resize handles - Only 4 Corners (visible on border) */}
-          <div 
-            className="absolute top-0 left-0 w-8 h-8 cursor-nwse-resize z-20 group"
-            onMouseDown={() => startResize('top-left')}
-            title="Resize"
-          >
+          {/* Resize handles - Only 4 Corners */}
+          <div className="absolute top-0 left-0 w-8 h-8 cursor-nwse-resize z-20 group" onMouseDown={() => startResize('top-left')} title="Resize">
             <div className="absolute top-0 left-0 w-3 h-3 border-t-4 border-l-4 border-blue-500 rounded-tl-2xl opacity-60 group-hover:opacity-100 group-hover:border-blue-600 transition-all" />
           </div>
-          <div 
-            className="absolute top-0 right-0 w-8 h-8 cursor-nesw-resize z-20 group"
-            onMouseDown={() => startResize('top-right')}
-            title="Resize"
-          >
+          <div className="absolute top-0 right-0 w-8 h-8 cursor-nesw-resize z-20 group" onMouseDown={() => startResize('top-right')} title="Resize">
             <div className="absolute top-0 right-0 w-3 h-3 border-t-4 border-r-4 border-blue-500 rounded-tr-2xl opacity-60 group-hover:opacity-100 group-hover:border-blue-600 transition-all" />
           </div>
-          <div 
-            className="absolute bottom-0 left-0 w-8 h-8 cursor-nesw-resize z-20 group"
-            onMouseDown={() => startResize('bottom-left')}
-            title="Resize"
-          >
+          <div className="absolute bottom-0 left-0 w-8 h-8 cursor-nesw-resize z-20 group" onMouseDown={() => startResize('bottom-left')} title="Resize">
             <div className="absolute bottom-0 left-0 w-3 h-3 border-b-4 border-l-4 border-blue-500 rounded-bl-2xl opacity-60 group-hover:opacity-100 group-hover:border-blue-600 transition-all" />
           </div>
-          <div 
-            className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize z-20 group"
-            onMouseDown={() => startResize('bottom-right')}
-            title="Resize"
-          >
+          <div className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize z-20 group" onMouseDown={() => startResize('bottom-right')} title="Resize">
             <div className="absolute bottom-0 right-0 w-3 h-3 border-b-4 border-r-4 border-blue-500 rounded-br-2xl opacity-60 group-hover:opacity-100 group-hover:border-blue-600 transition-all" />
           </div>
 
@@ -182,25 +238,34 @@ export default function Chatbot() {
                 <span className="text-xs text-white/90">Powered by Gemini AI</span>
               </div>
             </div>
-            <button 
-              onClick={() => setIsOpen(false)} 
-              className="hover:bg-white/20 p-2 rounded-full transition-colors flex-shrink-0"
-              title="Close chat"
-            >
-              <X size={22} strokeWidth={2.5} />
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={toggleMaximize} 
+                className="hover:bg-white/20 p-2 rounded-full transition-colors"
+                title={isMaximized ? "Minimize" : "Maximize"}
+              >
+                {isMaximized ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+              </button>
+              <button 
+                onClick={() => setIsOpen(false)} 
+                className="hover:bg-white/20 p-2 rounded-full transition-colors flex-shrink-0"
+                title="Close chat"
+              >
+                <X size={22} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
-                <div className={`max-w-[85%] p-3.5 rounded-2xl shadow-md ${
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
+                <div className={`max-w-[85%] p-3.5 rounded-2xl shadow-md whitespace-pre-wrap ${
                   msg.role === 'user' 
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-sm' 
                     : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 border-2 border-gray-200 dark:border-gray-600 rounded-bl-sm'
                 }`}>
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                  <p className="text-sm leading-relaxed">{msg.content}</p>
                 </div>
               </div>
             ))}
@@ -215,6 +280,7 @@ export default function Chatbot() {
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
