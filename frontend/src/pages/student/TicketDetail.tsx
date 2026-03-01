@@ -7,6 +7,7 @@ import { Modal } from '../../components/ui/Modal'
 import { ticketsAPI } from '../../api/tickets'
 import { adminAPI } from '../../api/admin'
 import { useAuth } from '../../context/AuthContext'
+import { getFileURL } from '../../utils/config'
 import type { Ticket, User } from '../../types'
 
 export function TicketDetail() {
@@ -269,7 +270,7 @@ export function TicketDetail() {
                   {ticket.attachments.map((attachment) => (
                     <a
                       key={attachment.id}
-                      href={`http://localhost:5000${attachment.filepath}`}
+                      href={getFileURL(attachment.filepath)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
