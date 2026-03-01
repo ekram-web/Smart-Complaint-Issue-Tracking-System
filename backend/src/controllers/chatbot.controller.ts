@@ -13,9 +13,12 @@ export const chatbotResponse = async (req: Request, res: Response) => {
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
     if (!GEMINI_API_KEY) {
+      console.log('⚠️ GEMINI_API_KEY not found, using fallback responses');
       // Fallback to rule-based if no API key
       return fallbackResponse(res, message);
     }
+
+    console.log('✅ Using Gemini AI for response');
 
     // System prompt to guide Gemini
     const systemPrompt = `You are an AI assistant for the ASTU (Adama Science and Technology University) Smart Complaint System. 
@@ -60,15 +63,24 @@ Answer the user's question:`;
     );
 
     if (!response.ok) {
+      console.error('Gemini API error:', response.status, response.statusText);
+      const errorData = await response.text();
+      console.error('Error details:', errorData);
       return fallbackResponse(res, message);
     }
 
     const data = await response.json() as any;
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-      'I apologize, but I encountered an issue. Please try rephrasing your question.';
+    
+    if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+      console.error('Invalid Gemini response structure:', JSON.stringify(data));
+      return fallbackResponse(res, message);
+    }
+    
+    const aiResponse = data.candidates[0].content.parts[0].text;
 
     return successResponse(res, { response: aiResponse }, 'Response generated successfully');
   } catch (error) {
+    console.error('Chatbot error:', error);
     return fallbackResponse(res, req.body.message);
   }
 };
