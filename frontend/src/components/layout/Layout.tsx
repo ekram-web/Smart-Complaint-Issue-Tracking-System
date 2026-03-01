@@ -23,7 +23,7 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900">
-          <div className="container mx-auto px-4 lg:px-6 pt-6 lg:pt-8 pb-2">{children}</div>
+          <div className="container mx-auto px-4 lg:px-6 py-6 lg:py-8 min-h-full">{children}</div>
         </main>
       </div>
 
